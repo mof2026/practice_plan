@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#f3ead8" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="ピアノ練習" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="color-scheme" content="light" />
+  <title>ピアノ練習計画</title>
+  <link rel="icon" href="./assets/icon-192.png" type="image/png" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png" />
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3ead8;
+      --paper: #fbf5e7;
+      --paper-strong: #f8efdc;
+      --line: #d8ccb6;
+      --line-strong: #b6a88f;
+      --ink: #19150f;
+      --muted: #786b59;
+      --accent: #493d31;
+      --sheet-line: #d6d0c5;
+      --sheet-frame: #8e816d;
+      --shadow: 0 16px 32px rgba(56, 43, 28, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      color: var(--ink);
+      font-family: "Noto Serif JP", "Hiragino Mincho ProN", serif;
+      background:
+        radial-gradient(circle at 14% 0%, rgba(255, 255, 255, 0.58), transparent 34%),
+        radial-gradient(circle at 88% 10%, rgba(119, 100, 76, 0.1), transparent 38%),
+        linear-gradient(180deg, rgba(255, 249, 236, 0.72), rgba(243, 234, 216, 0.98)),
+        var(--bg);
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+      color: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    a:focus-visible {
+      outline: 2px solid rgba(73, 61, 49, 0.55);
+      outline-offset: 3px;
+    }
+
+    @media screen {
+      .print-view {
+        display: none !important;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .editor-view {
+        display: none !important;
+      }
+    }
+
+    .editor-view .wrap {
+      position: relative;
+      max-width: 430px;
+      margin: 0 auto;
+      padding: 22px 22px 44px;
+    }
+
+    .editor-view .topbar {
+      position: relative;
+      min-height: 18px;
+      margin-bottom: 6px;
+    }
+
+    .editor-view .topbar-date {
+      position: absolute;
+      right: 0;
+      top: 0;
+      min-width: 132px;
+      text-align: right;
+      color: var(--muted);
+      font-size: 11px;
+      font-style: italic;
+      white-space: nowrap;
+      opacity: 0;
+    }
+
+    .editor-view .topbar-date-input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: transparent;
+      opacity: 0;
+      cursor: pointer;
+      appearance: none;
+    }
+
+    .editor-view .hero {
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .editor-view .hero-kicker {
+      color: var(--accent);
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.92;
+      font-style: normal;
+      transform: translateY(-0.5em);
+    }
+
+    .editor-view .hero-range {
+      margin-top: 8px;
+      text-align: center;
+      font-size: clamp(24px, 8.8vw, 36px);
+      padding-bottom: 0.16em;
+      font-family: "Noto Serif JP", "Hiragino Mincho ProN", serif;
+      line-height: 1.16;
+      letter-spacing: -0.03em;
+    }
+
+    .editor-view .hero-created {
+      margin-top: 10px;
+      text-align: right;
+      color: var(--muted);
+      font-size: 12px;
+      font-style: normal;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0.62;
+    }
+
+    .editor-view .shell {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .editor-view .section {
+      margin: 0;
+      padding: 0 0 22px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      background: transparent;
+      overflow: visible;
+    }
+
+    .editor-view .section + .section {
+      margin-top: 18px;
+    }
+
+    .editor-view .section-head {
+      display: block;
+      padding: 0 0 12px;
+      border: 0;
+      background: transparent;
+    }
+
+    .editor-view .section-head.compact {
+      padding-bottom: 0;
+    }
+
+    .editor-view .section-title {
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .editor-view .section-body {
+      padding: 0;
+    }
+
+    .editor-view .field-grid,
+    #extra-curves {
+      display: grid;
+      gap: 14px;
+    }
+
+    .editor-view .field-grid {
+      width: min(100%, 70%);
+      margin-inline: auto;
+    }
+
+    #extra-curves:not(:empty) {
+      margin-top: 16px;
+    }
+
+    .editor-view .field-row {
+      display: block;
+    }
+
+    .editor-view .field-row.with-tail {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 34px;
+      grid-template-areas:
+        "label label"
+        "field tail";
+      gap: 6px 10px;
+    }
+
+    .editor-view .field-row.with-tail .label {
+      grid-area: label;
+      margin-bottom: 0;
+    }
+
+    .editor-view .field-row.with-tail .field {
+      grid-area: field;
+    }
+
+    .editor-view .field-row.with-tail .curve-tail-btn {
+      grid-area: tail;
+      align-self: end;
+    }
+
+    .editor-view .label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .editor-view .field {
+      display: flex;
+      align-items: center;
+      min-height: auto;
+      padding: 0 0 8px;
+      border: 0;
+      border-bottom: 1px solid var(--line-strong);
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .editor-view .field.date-field {
+      border-color: var(--line-strong);
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .editor-view .field-input {
+      width: 100%;
+      padding: 0;
+      border: 0;
+      outline: none;
+      background: transparent;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+
+    .editor-view .field-input::placeholder,
+    .editor-view .curve-memo-input::placeholder,
+    .editor-view .practice-mini input::placeholder,
+    .editor-view .candidate-search-input::placeholder {
+      color: rgba(120, 107, 89, 0.66);
+    }
+
+    .editor-view .field-input[type="date"] {
+      cursor: pointer;
+    }
+
+    .editor-view .daycount-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .editor-view #day-count {
+      appearance: none;
+      -webkit-appearance: none;
+      padding-right: 18px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7' fill='none'%3E%3Cpath d='M1 1.25L5 5.25L9 1.25' stroke='%238A7A65' stroke-opacity='0.56' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1px center;
+      background-size: 10px 7px;
+    }
+
+    .editor-view .day-shortcuts {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .editor-view .day-shortcuts button,
+    .editor-view .chip,
+    .editor-view .curve-tail-btn,
+    .editor-view .candidate-option,
+    .editor-view .memo-history-save-btn {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .editor-view .day-shortcuts button,
+    .editor-view .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 6px 12px;
+      border-radius: 0;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .editor-view .day-shortcuts button {
+      width: 30px;
+      height: 30px;
+      min-width: 30px;
+      min-height: 30px;
+      padding: 0;
+      border-color: rgba(193, 182, 160, 0.72);
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 9.5px;
+      letter-spacing: 0.08em;
+    }
+
+    .editor-view .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .editor-view .chips.align-right {
+      justify-content: flex-start;
+    }
+
+    .editor-view .chips.align-right .chip {
+      width: 100%;
+      min-height: 72px;
+      font-size: 15px;
+      letter-spacing: 0.12em;
+    }
+
+    .editor-view .chip:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .editor-view .curve-tail-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .editor-view .curve-storage {
+      display: none;
+    }
+
+    .editor-view .section-piece-list {
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+
+    #practice-accordion-list {
+      counter-reset: piece;
+      margin-top: 2px;
+    }
+
+    .editor-view .accordion-item {
+      counter-increment: piece;
+      padding: 12px 0 22px;
+      border-top: 0;
+      background: transparent;
+    }
+
+    .editor-view .accordion-item + .accordion-item {
+      border-top: 1px solid var(--line);
+    }
+
+    .editor-view .accordion-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 0 0 10px;
+      border-bottom: 2px solid var(--ink);
+      cursor: pointer;
+    }
+
+    .editor-view .accordion-head-main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 52px;
+    }
+
+    .editor-view .accordion-title-input {
+      width: 100%;
+      padding: 0;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--ink);
+      font-size: clamp(17px, 5.2vw, 24px);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      font-weight: 600;
+      resize: none;
+      overflow: hidden;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .editor-view .accordion-head-side {
+      display: grid;
+      justify-items: end;
+      gap: 4px;
+      align-self: center;
+      padding-top: 0;
+    }
+
+    .editor-view .piece-index {
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .editor-view .curve-delete-btn {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .editor-view .accordion-sub {
+      display: none;
+    }
+
+    .editor-view .caret {
+      color: var(--muted);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .editor-view .accordion-body {
+      padding: 14px 0 0;
+    }
+
+    .editor-view .accordion-item.is-collapsed .accordion-body {
+      display: none;
+    }
+
+    .editor-view .curve-memo-field {
+      display: block;
+      padding: 0;
+      margin-bottom: 12px;
+      border: 0;
+      background: transparent;
+    }
+
+    .editor-view .curve-memo-label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .editor-view .curve-memo-input {
+      width: 100%;
+      min-height: 56px;
+      padding: 10px 10px 9px;
+      border: 1px solid rgba(194, 181, 158, 0.9);
+      border-radius: 4px;
+      outline: none;
+      background: rgba(255, 252, 245, 0.5);
+      font-size: 12px;
+      line-height: 1.55;
+      resize: vertical;
+    }
+
+    .editor-view .practice-list {
+      margin-top: 6px;
+    }
+
+    .editor-view .practice-mini {
+      position: relative;
+      display: grid;
+      grid-template-columns: 8px minmax(0, 1fr) auto;
+      grid-template-areas:
+        "drag title tools"
+        "drag desc desc";
+      gap: 0 6px;
+      align-items: start;
+      padding: 4px 0;
+      margin-top: 0;
+      border: 0;
+      border-bottom: 1px solid rgba(184, 172, 150, 0.66);
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .editor-view .practice-mini.is-dragging {
+      opacity: 0.64;
+    }
+
+    body.is-row-dragging {
+      user-select: none;
+    }
+
+    .editor-view .drag-handle {
+      grid-area: drag;
+      width: 8px;
+      min-height: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: grab;
+      touch-action: none;
+      align-self: stretch;
+      display: inline-flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    .editor-view .drag-handle:active {
+      cursor: grabbing;
+    }
+
+    .editor-view .drag-dots {
+      grid-area: drag;
+      width: 8px;
+      height: 14px;
+      margin-top: 1px;
+      background:
+        radial-gradient(circle, rgba(130, 118, 100, 0.55) 1.05px, transparent 1.1px) 0 0 / 4px 5px;
+      opacity: 0.85;
+    }
+
+    .editor-view .practice-mini:first-child {
+      margin-top: 0;
+    }
+
+    .editor-view .practice-mini .t,
+    .editor-view .practice-mini .d {
+      margin: 0;
+    }
+
+    .editor-view .practice-mini .t {
+      grid-area: title;
+      min-width: 0;
+    }
+
+    .editor-view .practice-mini .d {
+      grid-area: desc;
+      min-width: 0;
+    }
+
+    .editor-view .practice-mini input {
+      width: 100%;
+      display: block;
+      padding: 0;
+      border: 0;
+      outline: none;
+      background: transparent;
+    }
+
+    .editor-view .practice-title-input {
+      font-size: 13px;
+      line-height: 1.05;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .editor-view .practice-desc-input {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.05;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .editor-view .mini-tools {
+      grid-area: tools;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0;
+      margin-top: 0;
+      align-self: start;
+      padding-top: 1px;
+      white-space: nowrap;
+    }
+
+    .editor-view .mini-tools button {
+      min-width: 20px;
+      height: 20px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: rgba(120, 107, 89, 0.55);
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .editor-view .mini-tools button + button {
+      margin-left: 1px;
+    }
+
+    .editor-view .mini-tools button:hover {
+      color: var(--ink);
+    }
+
+    .editor-view .mini-tools [data-row-action="delete"]:hover {
+      color: #8d3434;
+    }
+
+    .editor-view .action-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 6px;
+    }
+
+    .editor-view .action-strip .chip {
+      min-height: 30px;
+      padding: 6px 10px;
+      font-size: 10px;
+    }
+
+    .editor-view .action-strip .add-item-chip {
+      flex: 1;
+    }
+
+    .editor-view .action-strip .helper-chip {
+      min-width: 64px;
+    }
+
+    .editor-view .piece-add-wrap {
+      padding: 18px 0 22px;
+      border-top: 1px solid var(--line);
+    }
+
+    .editor-view .piece-add-btn {
+      width: 100%;
+      min-height: 74px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      border: 1px solid rgba(194, 181, 158, 0.9);
+      background: rgba(255, 252, 245, 0.3);
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .editor-view .piece-add-btn span {
+      display: block;
+      font-size: 13px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .editor-view .sticky {
+      position: static;
+      padding: 8px 22px calc(18px + env(safe-area-inset-bottom));
+      pointer-events: auto;
+    }
+
+    .editor-view .sticky::before {
+      display: none;
+    }
+
+    .editor-view .sticky-inner {
+      max-width: 430px;
+      margin: 0 auto;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .editor-view .sticky-row {
+      display: block;
+      min-height: 0;
+      text-align: center;
+    }
+
+    .editor-view .sticky-actions {
+      position: static;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .editor-view .sticky-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .editor-view .sticky-btn.primary {
+      min-width: 130px;
+      min-height: 30px;
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 3px;
+      background: var(--ink);
+      color: var(--paper);
+      box-shadow: 0 10px 18px rgba(25, 21, 15, 0.12);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .editor-view .sticky-btn.subtle {
+      min-height: auto;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .editor-view .sticky-slash {
+      display: none;
+    }
+
+    .editor-view .sticky-status {
+      min-height: 16px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .editor-view .app-nav {
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+      margin-top: 16px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(193, 182, 160, 0.72);
+    }
+
+    .editor-view .app-nav-item {
+      appearance: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 92px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: rgba(120, 107, 89, 0.78);
+    }
+
+    .editor-view .app-nav-item.is-active {
+      color: var(--ink);
+    }
+
+    .editor-view .app-nav-item.is-active::before {
+      content: "";
+      width: 46px;
+      height: 2px;
+      margin-bottom: 8px;
+      background: var(--ink);
+    }
+
+    .editor-view .app-nav-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 18px;
+      color: currentColor;
+    }
+
+    .editor-view .app-nav-icon svg {
+      width: 100%;
+      height: 100%;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .editor-view .app-nav-label {
+      margin-top: 6px;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .editor-view .candidate-sheet[hidden],
+    .editor-view .memo-history-sheet[hidden] {
+      display: none !important;
+    }
+
+    .editor-view .candidate-sheet,
+    .editor-view .memo-history-sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: flex-end;
+      background: rgba(25, 21, 15, 0.18);
+      backdrop-filter: blur(3px);
+    }
+
+    .editor-view .candidate-sheet-panel,
+    .editor-view .memo-history-panel {
+      width: min(100%, 430px);
+      max-height: min(80dvh, 720px);
+      margin: 0 auto;
+      border: 1px solid rgba(142, 129, 109, 0.3);
+      border-radius: 20px 20px 0 0;
+      background: linear-gradient(180deg, var(--paper), var(--paper-strong));
+      box-shadow: 0 -16px 34px rgba(56, 43, 28, 0.16);
+      overflow: hidden;
+      outline: none;
+    }
+
+    .editor-view .candidate-sheet-head,
+    .editor-view .memo-history-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .editor-view .candidate-sheet-title {
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .editor-view .memo-history-title {
+      color: var(--accent);
+      font-size: 12px;
+      line-height: 1.2;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.92;
+      font-style: normal;
+    }
+
+    .editor-view .candidate-sheet-sub,
+    .editor-view .memo-history-sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .editor-view .candidate-sheet-close,
+    .editor-view .memo-history-close,
+    .editor-view .memo-history-delete {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .editor-view .candidate-sheet-search,
+    .editor-view .memo-history-action {
+      padding: 12px 18px 0;
+    }
+
+    .editor-view .candidate-search-input {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: rgba(255, 255, 255, 0.24);
+      outline: none;
+      font-size: 14px;
+    }
+
+    .editor-view .candidate-sheet-body,
+    .editor-view .memo-history-body {
+      overflow: auto;
+      padding: 14px 18px 22px;
+      max-height: calc(min(80dvh, 720px) - 124px);
+    }
+
+    .editor-view .candidate-group + .candidate-group {
+      margin-top: 16px;
+    }
+
+    .editor-view .candidate-group-head {
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .editor-view .candidate-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .editor-view .candidate-option {
+      width: 100%;
+      display: grid;
+      gap: 4px;
+      padding: 12px 14px;
+      border-radius: 0;
+      text-align: left;
+    }
+
+    .editor-view .candidate-option .name {
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .editor-view .candidate-option .desc {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .editor-view .candidate-empty,
+    .editor-view .memo-history-empty {
+      padding: 14px;
+      border: 1px dashed rgba(142, 129, 109, 0.38);
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .editor-view .memo-history-save-btn {
+      width: 100%;
+      min-height: 46px;
+      border-radius: 0;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+    }
+
+    .editor-view .memo-history-save-btn:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .editor-view .memo-history-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .editor-view .memo-history-entry {
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: rgba(255, 255, 255, 0.16);
+      overflow: hidden;
+    }
+
+    .editor-view .memo-history-entry-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .editor-view .memo-history-stamp {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .editor-view .memo-history-entry-body {
+      padding: 10px 12px 12px;
+    }
+
+    .editor-view .memo-history-curve + .memo-history-curve {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(142, 129, 109, 0.28);
+    }
+
+    .editor-view .memo-history-curve-name {
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .editor-view .memo-history-curve-text {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .print-view .wrap {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .print-view .topbar {
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .print-view .layout {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .print-view .panel {
+      padding: 12px;
+      border: 1px solid rgba(142, 129, 109, 0.22);
+      border-radius: 18px;
+      background: rgba(251, 245, 231, 0.78);
+      box-shadow: var(--shadow);
+    }
+
+    .print-view .panel.sticky {
+      position: sticky;
+      top: 16px;
+    }
+
+    .print-view .card {
+      padding: 12px;
+      border: 1px solid rgba(142, 129, 109, 0.18);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.38);
+    }
+
+    .print-view .actions {
+      display: flex;
+      justify-content: center;
+    }
+
+    .print-view .btn {
+      min-height: 44px;
+      padding: 8px 18px;
+      border: 0;
+      border-radius: 2px;
+      background: var(--ink);
+      color: var(--paper);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .print-view .sheet-card + .sheet-card {
+      margin-top: 12px;
+    }
+
+    .print-view .sheet-card {
+      padding: 0 10px 0 18px;
+    }
+
+    .print-view .sheet {
+      min-width: 1200px;
+    }
+
+    .print-view .sheet-date {
+      padding: 0 2px 6px 0;
+      text-align: right;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .print-view .sheet-frame {
+      position: relative;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .print-view .sheet-frame::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border: 1.2px solid var(--sheet-frame);
+      pointer-events: none;
+    }
+
+    .print-view table.plan {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: #fff;
+    }
+
+    .print-view table.plan col.left {
+      width: 30%;
+    }
+
+    .print-view table.plan td {
+      height: 31px;
+      padding: 0;
+      border: 0.8px solid var(--sheet-line);
+      vertical-align: middle;
+      background: #fff;
+    }
+
+    .print-view table.plan tr:first-child > td {
+      border-top: 0;
+    }
+
+    .print-view table.plan tr:last-child > td {
+      border-bottom: 0;
+    }
+
+    .print-view table.plan tr > td:first-child {
+      border-left: 0;
+    }
+
+    .print-view table.plan tr > td:last-child {
+      border-right: 0;
+    }
+
+    .print-view tr.dates-row td {
+      height: 26px;
+      background: #faf8f3;
+      color: #4f4a43;
+      font-size: 10px;
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+
+    .print-view tr.curve-row td {
+      border-top: 1.2px solid var(--sheet-frame);
+      border-bottom: 1.05px solid #b8b0a3;
+      background: #fcfaf4;
+    }
+
+    .print-view tr.curve-row .curve-memo-cell {
+      padding: 0 12px 0 10px;
+      color: #44403b;
+      font-size: 10px;
+    }
+
+    .print-view .memo-label-inline {
+      display: inline-block;
+      margin-right: 4px;
+      color: var(--accent);
+    }
+
+    .print-view .section-left {
+      padding: 0 10px 0 36px;
+      font-size: 10px;
+    }
+
+    .print-view .section-title-text {
+      display: block;
+      padding-left: 1em;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .print-view .day {
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .print-view .left-cell {
+      padding: 0 10px 0 36px;
+    }
+
+    .print-view .practice-wrap {
+      padding: 4px 0 4px 1em;
+      line-height: 1.18;
+    }
+
+    .print-view .practice-wrap.is-single-line {
+      display: flex;
+      align-items: center;
+      min-height: 31px;
+      padding: 0 0 0 1em;
+    }
+
+    .print-view .practice-title,
+    .print-view .practice-desc {
+      margin: 0;
+      word-break: break-word;
+    }
+
+    .print-view .practice-title {
+      font-size: 9.8px;
+    }
+
+    .print-view .practice-desc {
+      margin-top: 2px;
+      color: #55514b;
+      font-size: 8.8px;
+    }
+
+    @media (max-width: 720px) {
+      .editor-view .wrap {
+        padding-inline: 20px;
+      }
+
+      .editor-view .daycount-row {
+        grid-template-columns: 1fr;
+      }
+
+      .editor-view .day-shortcuts {
+        justify-content: flex-end;
+      }
+
+      .editor-view .accordion-head {
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      .editor-view .accordion-head-side {
+        padding-top: 6px;
+      }
+
+      .editor-view .practice-mini {
+        grid-template-columns: 8px minmax(0, 1fr) auto;
+        grid-template-areas:
+          "drag title tools"
+          "drag desc desc";
+        gap: 0 6px;
+      }
+
+      .editor-view .mini-tools {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+      }
+
+      .editor-view .sticky-actions {
+        gap: 18px;
+      }
+
+      .editor-view .app-nav-item {
+        min-width: 74px;
+      }
+    }
+
+    @media print {
+      @page {
+        size: A4 landscape;
+        margin: 10mm;
+      }
+
+      .print-view .topbar,
+      .print-view .panel.sticky {
+        display: none;
+      }
+
+      .print-view .wrap {
+        max-width: none;
+        padding: 0;
+      }
+
+      .print-view .layout {
+        display: block;
+      }
+
+      .print-view .panel {
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+        background: transparent;
+      }
+
+      .print-view .sheet-card {
+        break-after: page;
+        margin-top: 0;
+        padding: 0 6px 0 12px;
+      }
+
+      .print-view .sheet-card:last-child {
+        break-after: auto;
+      }
+
+      .print-view .sheet {
+        min-width: 0;
+      }
+
+      .print-view .sheet-date {
+        padding-bottom: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="editor-view">
+    <div class="wrap">
+      <div class="topbar">
+        <label class="topbar-date" aria-label="作成日">
+          <span id="created-date-display" class="topbar-date-text">--/--/-- 作成</span>
+          <input id="created-date" class="topbar-date-input" type="date" />
+        </label>
+      </div>
+
+      <section class="hero" aria-label="計画の要約">
+        <p class="hero-kicker">Practice Plan For</p>
+        <h1 id="plan-range-display" class="hero-range">--/-- - --/--</h1>
+        <p id="hero-created-date" class="hero-created">--</p>
+      </section>
+
+      <div class="shell">
+        <section class="section">
+          <div class="section-body">
+            <div class="field-grid">
+              <div class="field-row">
+                <div class="label">Practice Start Date</div>
+                <div class="field date-field">
+                  <input id="start-date" class="field-input" type="date" />
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="label">Plan Duration (Days)</div>
+                <div class="daycount-row">
+                  <div class="field"><select id="day-count" class="field-input"></select></div>
+                  <div class="day-shortcuts" aria-label="よく使う日数">
+                    <button type="button" data-day="14">14</button>
+                    <button type="button" data-day="21">21</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="curve-storage" aria-hidden="true">
+          <input id="curve-0" class="field-input" type="text" tabindex="-1" />
+          <input id="curve-1" class="field-input" type="text" tabindex="-1" />
+          <div id="extra-curves"></div>
+        </div>
+
+        <section class="section section-piece-list">
+          <div id="practice-accordion-list"></div>
+          <div class="piece-add-wrap">
+            <button id="add-curve-btn" type="button" class="piece-add-btn">+<span>ADD PIECE</span></button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="sticky">
+      <div class="sticky-inner">
+        <div class="sticky-row">
+          <a id="open-print-btn" class="sticky-btn primary" href="#">PRINT (A4)</a>
+          <div class="sticky-actions">
+            <button id="backup-export-btn" type="button" class="sticky-btn subtle">SAVE</button>
+            <button id="backup-import-btn" type="button" class="sticky-btn subtle">RESTORE</button>
+          </div>
+        </div>
+        <div id="sticky-status" class="sticky-status" aria-live="polite"></div>
+        <div class="app-nav">
+          <button type="button" class="app-nav-item is-active">
+            <span class="app-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img" focusable="false">
+                <path d="M3.5 6.5h6.6c1.6 0 2.9.5 4 1.5v9.2c-1-.9-2.4-1.4-4-1.4H3.5z"/>
+                <path d="M20.5 6.5h-6.6c-1.6 0-2.9.5-4 1.5v9.2c1-.9 2.4-1.4 4-1.4h6.6z"/>
+                <path d="M12 8v9.1"/>
+              </svg>
+            </span>
+            <span class="app-nav-label">PRACTICE</span>
+          </button>
+          <button id="memo-history-btn" type="button" class="app-nav-item">
+            <span class="app-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img" focusable="false">
+                <path d="M6.5 5.5h8l3 3v10H6.5z"/>
+                <path d="M14.5 5.5v3h3"/>
+                <path d="M9 12h6"/>
+                <path d="M9 15h6"/>
+              </svg>
+            </span>
+            <span class="app-nav-label">ARCHIVE</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <input id="backup-import-file" type="file" accept="application/json,.json" hidden />
+
+    <div id="candidate-sheet" class="candidate-sheet" hidden aria-hidden="true">
+      <div class="candidate-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="candidate-sheet-title" tabindex="-1">
+        <div class="candidate-sheet-head">
+          <div>
+            <p id="candidate-sheet-title" class="candidate-sheet-title">候補から追加</p>
+            <p id="candidate-sheet-sub" class="candidate-sheet-sub">曲ごとの候補を選択</p>
+          </div>
+          <button id="candidate-sheet-close" type="button" class="candidate-sheet-close">閉じる</button>
+        </div>
+        <div class="candidate-sheet-search">
+          <input id="candidate-search-input" class="candidate-search-input" type="search" placeholder="検索（例: 右手 / リズム / 通し）" />
+        </div>
+        <div class="candidate-sheet-body">
+          <div id="candidate-group-recent" class="candidate-group">
+            <p class="candidate-group-head">最近使った</p>
+            <div id="candidate-recent-list" class="candidate-list"></div>
+          </div>
+          <div class="candidate-group">
+            <p class="candidate-group-head">候補一覧</p>
+            <div id="candidate-master-list" class="candidate-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="memo-history-sheet" class="memo-history-sheet" hidden aria-hidden="true">
+      <div class="memo-history-panel" role="dialog" aria-modal="true" aria-labelledby="memo-history-title" tabindex="-1">
+        <div class="memo-history-head">
+          <div>
+            <p id="memo-history-title" class="memo-history-title">ARCHIVE</p>
+            <p class="memo-history-sub">曲ごとのメモをスナップショットとして振り返り</p>
+          </div>
+          <button id="memo-history-close" type="button" class="memo-history-close">閉じる</button>
+        </div>
+        <div class="memo-history-action">
+          <button id="memo-history-save" type="button" class="memo-history-save-btn">＋ 今のメモを履歴に残す</button>
+        </div>
+        <div class="memo-history-body">
+          <div id="memo-history-list" class="memo-history-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="print-view">
+    <div class="wrap">
+      <div class="topbar"><a href="#">← 編集に戻る</a></div>
+      <div class="layout">
+        <aside class="panel sticky">
+          <section class="card">
+            <div class="actions">
+              <button type="button" class="btn" id="print-btn">印刷 / PDF</button>
+            </div>
+          </section>
+        </aside>
+        <main class="panel"></main>
+      </div>
+    </div>
+  </div>
+
+  <script src="./shared.js"></script>
+  <script src="./editor.js"></script>
+  <script src="./print.js"></script>
+  <script>
+    (() => {
+      const startEl = document.getElementById("start-date");
+      const dayEl = document.getElementById("day-count");
+      const createdEl = document.getElementById("created-date");
+      const rangeEl = document.getElementById("plan-range-display");
+      const createdLabelEl = document.getElementById("hero-created-date");
+
+      if (!startEl || !dayEl || !createdEl || !rangeEl || !createdLabelEl) return;
+
+      function parseIsoDate(iso) {
+        const match = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) return null;
+        return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+      }
+
+      function formatShort(iso) {
+        const date = parseIsoDate(iso);
+        if (!date) return "--/--";
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      }
+
+      function formatCreated(iso) {
+        const date = parseIsoDate(iso);
+        if (!date) return "--";
+        const month = date.toLocaleString("en-US", { month: "long" }).toUpperCase();
+        const dd = date.getDate();
+        const yyyy = date.getFullYear();
+        return `${month} ${dd}, ${yyyy}`;
+      }
+
+      function endDateIso(startIso, dayCount) {
+        const base = parseIsoDate(startIso);
+        if (!base) return null;
+        const end = new Date(base);
+        end.setDate(base.getDate() + Math.max(0, Number(dayCount || 1) - 1));
+        const yyyy = end.getFullYear();
+        const mm = String(end.getMonth() + 1).padStart(2, "0");
+        const dd = String(end.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+      }
+
+      function renderHero() {
+        const startIso = startEl.value;
+        const days = Number(dayEl.value || 0);
+        const endIso = endDateIso(startIso, days);
+        rangeEl.textContent = endIso ? `${formatShort(startIso)}-${formatShort(endIso)}` : "--/-- - --/--";
+        createdLabelEl.textContent = formatCreated(createdEl.value);
+      }
+
+      ["input", "change"].forEach((eventName) => {
+        startEl.addEventListener(eventName, renderHero);
+        dayEl.addEventListener(eventName, renderHero);
+        createdEl.addEventListener(eventName, renderHero);
+      });
+
+      document.addEventListener("piano-practice:state-rendered", renderHero);
+      window.addEventListener("pageshow", renderHero);
+      window.addEventListener("load", renderHero);
+      window.requestAnimationFrame(renderHero);
+    })();
+  </script>
+</body>
+</html>
